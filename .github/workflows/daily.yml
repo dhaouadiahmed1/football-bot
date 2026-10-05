@@ -6,7 +6,8 @@ name: Daily football tickets
 
 on:
   schedule:
-    - cron: "0 6 * * *"      # 08:00 UTC = 09:00 in Tunis (UTC+1, no DST)
+    - cron: "55 5 * * *"     # 05:55 UTC = 06:55 Tunis; GitHub queues a few
+                             # minutes late, so it lands ~07:00 (UTC+1, no DST)
   workflow_dispatch:          # lets you run it by hand from the Actions tab
 
 permissions:

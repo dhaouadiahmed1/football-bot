@@ -15,8 +15,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 # Comma separated chat ids that receive the daily post automatically.
 DEFAULT_CHAT_IDS = [c.strip() for c in os.getenv("CHAT_IDS", "").split(",") if c.strip()]
 # Hour (0-23) in TIMEZONE at which the daily tickets are pushed.
-DAILY_HOUR = int(os.getenv("DAILY_HOUR", "9"))
+DAILY_HOUR = int(os.getenv("DAILY_HOUR", "7"))
 DAILY_MINUTE = int(os.getenv("DAILY_MINUTE", "0"))
+# 0 = this process answers commands but never pushes the daily pair.
+# Set it to 0 whenever GitHub Actions is the one sending, or you get two.
+DAILY_PUSH = os.getenv("DAILY_PUSH", "1") not in ("0", "false", "no")
 TIMEZONE = os.getenv("TIMEZONE", "Africa/Tunis")
 
 # ---------------------------------------------------------------- Provider --

@@ -382,14 +382,17 @@ def main() -> None:
     app.add_handler(CommandHandler(["roi", "results"], cmd_roi))
     app.add_handler(CommandHandler(["status", "health"], cmd_status))
 
-    app.job_queue.run_daily(
-        daily_job,
-        time=dtime(hour=config.DAILY_HOUR, minute=config.DAILY_MINUTE, tzinfo=TZ),
-        name="daily_tickets",
-    )
-
-    log.info("Bot starting — provider=%s, daily=%02d:%02d %s",
-             PROVIDER.name, config.DAILY_HOUR, config.DAILY_MINUTE, config.TIMEZONE)
+    if config.DAILY_PUSH:
+        app.job_queue.run_daily(
+            daily_job,
+            time=dtime(hour=config.DAILY_HOUR, minute=config.DAILY_MINUTE, tzinfo=TZ),
+            name="daily_tickets",
+        )
+        log.info("Bot starting — provider=%s, daily=%02d:%02d %s",
+                 PROVIDER.name, config.DAILY_HOUR, config.DAILY_MINUTE, config.TIMEZONE)
+    else:
+        log.info("Bot starting — provider=%s, daily push OFF "
+                 "(GitHub Actions sends it); commands still work", PROVIDER.name)
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 
