@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: football-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    healthCheckPath: /
+    envVars:
+      - key: BOT_TOKEN
+        sync: false            # set in the Render dashboard
+      - key: PROVIDER
+        value: mock            # change to apifootball once you have a key
+      - key: APIFOOTBALL_KEY
+        sync: false
+      - key: TIMEZONE
+        value: Africa/Tunis
+      - key: DAILY_HOUR
+        value: "9"
+      - key: TARGET_ODDS
+        value: "30"
+      - key: PYTHON_VERSION
+        value: "3.12.6"

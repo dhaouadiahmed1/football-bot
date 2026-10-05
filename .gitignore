@@ -1,0 +1,14 @@
+# secrets — never commit
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# runtime data (the CI job commits history.jsonl explicitly with -f)
+data/cache/
+data/subscribers.json
+data/api_usage.json
+data/history.jsonl
+data/_demo*

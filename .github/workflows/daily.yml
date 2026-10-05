@@ -1,0 +1,51 @@
+name: Daily football tickets
+
+# Free forever: GitHub Actions gives public repos unlimited minutes and
+# private repos 2000 min/month. This job uses about 1 minute a day.
+# No server, no sleeping dyno, no credit card, no keep-alive pinger.
+
+on:
+  schedule:
+    - cron: "0 8 * * *"      # 08:00 UTC = 09:00 in Tunis (UTC+1, no DST)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write             # so the bot can commit its own results history
+
+concurrency:
+  group: daily-tickets
+  cancel-in-progress: false
+
+jobs:
+  tickets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install (analysis only, no telegram lib needed)
+        run: pip install httpx python-dotenv
+
+      - name: Analyse, settle and send
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_IDS: ${{ secrets.CHAT_IDS }}
+          # Optional. Leave the secret unset and the bot just uses free CSVs.
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
+          TIMEZONE: Africa/Tunis
+          PROVIDER: hybrid        # free CSVs, API only when the card is thin
+          PRICE_SOURCE: max
+          TARGET_ODDS: "30"
+        run: python daily.py
+
+      - name: Commit the updated results history
+        run: |
+          git config user.name  "football-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f data/history.jsonl data/api_usage.json 2>/dev/null || git add -f data/history.jsonl
+          git diff --staged --quiet || git commit -m "results: $(date -u +%F)"
+          git push
