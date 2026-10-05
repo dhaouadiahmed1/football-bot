@@ -53,14 +53,16 @@ Send `/start`, then `/today`.
 
 ## 2. Run it daily for free, with no server
 
-No Render, no Railway, no sleeping dyno, no uptime pinger.
+No Render, no Railway, no sleeping dyno, no uptime pinger. One command:
 
-1. Push this folder to a GitHub repo (public = unlimited free Actions minutes).
-2. Repo → **Settings → Secrets and variables → Actions → New secret**:
-   - `BOT_TOKEN` — from @BotFather
-   - `CHAT_IDS` — your chat id (message [@userinfobot](https://t.me/userinfobot))
-3. Repo → **Actions** tab → enable workflows → run **Daily football tickets**
-   once by hand to test.
+```bash
+pip install pynacl
+python deploy_github.py --token ghp_YOUR_TOKEN --public
+```
+
+It creates the repo, uploads your secrets (encrypted locally with libsodium),
+pushes, and triggers the first run. Use `--dry-run` to preview. Full manual
+steps are in [SETUP.md](SETUP.md) if you'd rather click through it.
 
 It now runs every morning at 08:00 UTC (09:00 Tunis), settles yesterday's
 tickets, posts today's, and commits the results history back to your repo.
@@ -187,6 +189,8 @@ register it in `providers/__init__.py` — the engine never changes.
 
 ```
 doctor.py        health check: verifies token, chat, data, API, pipeline
+deploy_github.py one-command deploy: repo + secrets + push + first run
+link_chat.py     waits for your Telegram message, saves your chat id
 bot.py           interactive Telegram bot (polling)
 daily.py         one-shot: settle → analyse → send   (what CI runs)
 backtest.py      replay the strategy over past seasons with real odds

@@ -163,26 +163,51 @@ normal match day**, and a local counter in `data/api_usage.json` hard-stops at
 
 ---
 
-## Step 5 — Run it free, forever, with no server (5 min)
+## Step 5 — Run it free, forever, with no server
 
-GitHub Actions runs the daily job for you. Public repo = unlimited free minutes;
-this uses about one minute a day. Nothing sleeps, nothing needs pinging.
+GitHub Actions runs the daily job for you. Public repo = unlimited free
+minutes; this uses about one minute a day. Nothing sleeps, nothing needs a
+keep-alive pinger, no credit card.
 
-1. **Create the repo.**
+### Option A — one command (recommended)
 
 ```bash
-git init
-git add .
-git commit -m "football bot"
-git branch -M main
+pip install pynacl
+python deploy_github.py --token ghp_YOUR_TOKEN
+```
+
+That single command creates the repo, grants the workflow write permission,
+encrypts and uploads your three secrets, pushes the code, and triggers the
+first run. Add `--public` for unlimited Actions minutes, or `--repo my-name`
+to change the repository name.
+
+Get the token at **https://github.com/settings/tokens/new**:
+- *Generate new token (classic)*
+- Expiration: **7 days** is plenty
+- Tick **only** `repo` and `workflow`
+- **Delete it right after the deploy** — the bot never needs it again
+
+Preview exactly what it will do, without sending anything:
+
+```bash
+python deploy_github.py --dry-run
+```
+
+> Your secrets are encrypted locally with libsodium (the same sealed-box scheme
+> GitHub's own CLI uses) before upload, and the push URL with the token in it is
+> removed from `.git/config` immediately afterwards.
+
+### Option B — by hand
+
+1. Create an empty repo at https://github.com/new (do **not** add a README).
+2. Push:
+
+```bash
 git remote add origin https://github.com/YOUR_USERNAME/football-bot.git
 git push -u origin main
 ```
 
-> `.env` is in `.gitignore`, so your token is **not** uploaded. Never commit it.
-
-2. **Add your secrets.** On GitHub: your repo → **Settings** →
-   **Secrets and variables** → **Actions** → **New repository secret**.
+3. Repo → **Settings → Secrets and variables → Actions → New repository secret**:
 
 | Name | Value | Required |
 |---|---|---|
@@ -190,20 +215,24 @@ git push -u origin main
 | `CHAT_IDS` | your id from @userinfobot | yes |
 | `APIFOOTBALL_KEY` | your API-Football key | optional |
 
-3. **Enable and test.** Repo → **Actions** tab → if prompted, click
-   *"I understand my workflows, go ahead and enable them"* → pick
-   **Daily football tickets** → **Run workflow**.
+4. Repo → **Settings → Actions → General → Workflow permissions** →
+   **Read and write** (the job commits its results history back).
+5. Repo → **Actions** tab → enable workflows → **Daily football tickets** →
+   **Run workflow**.
 
-Watch the run. Green tick = it worked, and you'll have a Telegram message.
+### Either way
 
-4. **It now runs every day at 08:00 UTC (09:00 Tunis).** To change the time,
-   edit the `cron:` line in `.github/workflows/daily.yml`:
+`.env` is gitignored, so your secrets are never committed — verify any time
+with `git ls-files | grep .env` (it should print nothing).
+
+It now runs every day at **08:00 UTC = 09:00 Tunis**. To change the time, edit
+the `cron:` line in `.github/workflows/daily.yml`:
 
 ```yaml
-    - cron: "0 8 * * *"      # minute hour * * *  (always UTC)
+    - cron: "0 8 * * *"      # minute hour * * *   (always UTC)
 ```
 
-`0 6 * * *` = 07:00 Tunis. `30 17 * * *` = 18:30 Tunis.
+`0 6 * * *` = 07:00 Tunis · `30 17 * * *` = 18:30 Tunis.
 
 ---
 
