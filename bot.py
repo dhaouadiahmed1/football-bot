@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import importlib
 import logging
 import threading
 from datetime import date, datetime, time as dtime
@@ -319,10 +320,24 @@ async def daily_job(ctx: ContextTypes.DEFAULT_TYPE) -> None:
 # ------------------------------------------------- health server (hosting) --
 class _Health(BaseHTTPRequestHandler):
     def do_GET(self):  # noqa: N802
+        # /healthz stays plain text for uptime probes; / is the dashboard.
+        if self.path.rstrip("/") in ("/healthz", "/health"):
+            body, ctype = b"football-bot: ok", "text/plain"
+        else:
+            try:
+                import dashboard
+                importlib.reload(dashboard)      # pick up edits without a restart
+                body = dashboard.render().encode()
+            except Exception as exc:             # noqa: BLE001
+                log.exception("dashboard render failed")
+                body = f"dashboard error: {exc}".encode()
+            ctype = "text/html; charset=utf-8"
         self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(b"football-bot: ok")
+        self.wfile.write(body)
 
     def log_message(self, *a):  # silence
         pass
