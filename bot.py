@@ -209,6 +209,7 @@ async def collect_status() -> dict:
         "model_weight": config.MODEL_WEIGHT,
         "devig": config.DEVIG_METHOD,
         "daily_time": f"{config.DAILY_HOUR:02d}:{config.DAILY_MINUTE:02d}",
+        "pushed_by": "this instance" if config.DAILY_PUSH else "GitHub Actions",
         "tz": config.TIMEZONE,
         "subscribers": len(load_subs()),
         "history_days": 0, "record": {},

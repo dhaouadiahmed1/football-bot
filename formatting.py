@@ -96,7 +96,10 @@ def render_status(s: dict) -> str:
     else:
         icon = "✅" if s["fixtures"] >= s["min_card"] else "⚠️"
         L.append(f"  {icon} {s['fixtures']} fixtures · {s['selections']} selections")
-        if s["fixtures"] < s["min_card"]:
+        if s["fixtures"] == 0:
+            L.append("  <i>no matches in the tracked leagues today — "
+                     "international break or an off-day, not a fault</i>")
+        elif s["fixtures"] < s["min_card"]:
             L.append(f"  <i>thin card (want {s['min_card']}+) — "
                      f"{'API will top it up' if s['api_key'] else 'add an API key to fill gaps'}</i>")
 
@@ -126,8 +129,9 @@ def render_status(s: dict) -> str:
              f"prices: <code>{escape(s['price_source'])}</code>")
     L.append(f"  model weight: {s['model_weight']:.2f} · "
              f"de-vig: <code>{escape(s['devig'])}</code>")
-    L.append(f"  daily push: <b>{s['daily_time']}</b> {escape(s['tz'])} · "
-             f"{s['subscribers']} subscriber(s)")
+    L.append(f"  daily push: <b>{s['daily_time']}</b> {escape(s['tz'])} "
+             f"<i>({escape(s.get('pushed_by', 'this instance'))})</i>")
+    L.append(f"  {s['subscribers']} subscriber(s)")
 
     L.append("")
     L.append("<b>Track record</b>")
@@ -140,6 +144,8 @@ def render_status(s: dict) -> str:
             if r.get("n"):
                 L.append(f"  {emoji} {kind.upper()}: {r['won']}/{r['n']} · "
                          f"<b>{r['profit']:+.2f}u</b> · ROI {r['roi']*100:+.1f}%")
+                if r["n"] < 30:
+                    L.append(f"     <i>only {r['n']} settled — noise, not a record</i>")
             else:
                 L.append(f"  {emoji} {kind.upper()}: no settled tickets yet")
         L.append("  <i>/roi for the full breakdown</i>")
