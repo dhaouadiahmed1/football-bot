@@ -1,23 +1,55 @@
+# Render blueprint — free, no credit card, no sleeping.
+#
+# Render's free plan has no background workers, so the bot is deployed as a
+# "web service": it polls Telegram in the foreground and serves the status
+# dashboard on $PORT, which also satisfies Render's open-port health check.
+#
+# Free plan budget: 750 instance hours per workspace per month. One service
+# running 24/7 uses 744 in a 31-day month, so this fits — but it is the ONLY
+# free service you can keep always-on. Add a second and both get suspended
+# when the 750 runs out.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+# Then paste the three secrets when prompted (they are marked sync:false, so
+# they are never written into this file or into git).
+
 services:
   - type: web
-    name: football-bot
+    name: football-tickets-bot
     runtime: python
     plan: free
+    region: frankfurt              # closest free region to Tunis
+    branch: main
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-    healthCheckPath: /
+    healthCheckPath: /healthz
+    autoDeploy: true               # redeploy on every push to main
+
     envVars:
+      # ── secrets: Render prompts for these on first deploy ────────────────
       - key: BOT_TOKEN
-        sync: false            # set in the Render dashboard
-      - key: PROVIDER
-        value: mock            # change to apifootball once you have a key
+        sync: false
+      - key: CHAT_IDS
+        sync: false
       - key: APIFOOTBALL_KEY
         sync: false
+
+      # ── settings ─────────────────────────────────────────────────────────
       - key: TIMEZONE
         value: Africa/Tunis
-      - key: DAILY_HOUR
-        value: "9"
+      - key: PROVIDER
+        value: hybrid
+      - key: PRICE_SOURCE
+        value: max
       - key: TARGET_ODDS
         value: "30"
+
+      # GitHub Actions owns the 07:00 push and commits the results history to
+      # the repo. Render's disk is wiped on every restart, so if this instance
+      # also pushed you would get duplicate messages and lose the ROI ledger.
+      # Leave this at 0: here the bot answers commands, nothing more.
+      - key: DAILY_PUSH
+        value: "0"
+
       - key: PYTHON_VERSION
-        value: "3.12.6"
+        value: "3.12"

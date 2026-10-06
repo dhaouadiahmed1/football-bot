@@ -236,7 +236,50 @@ the `cron:` line in `.github/workflows/daily.yml`:
 
 ---
 
-## Step 6 — Use it
+## Step 6 — Keep the bot answering 24/7 (optional)
+
+GitHub Actions already sends the 07:00 ticket whether or not anything else is
+running. This step is only about the *commands* — `/today`, `/roi`, `/status`
+— which need a process that is always awake.
+
+**Render's free plan is the only always-on option that takes no credit card.**
+One service, 512 MB, no card, 750 instance hours a month — and 24/7 for a
+31-day month costs 744 of them, so it just fits. It is the only free service
+you can keep awake; a second one will exhaust the quota and suspend both.
+
+1. Sign up at **https://render.com** (GitHub login, no card asked).
+2. **New → Blueprint** → pick your `football-bot` repo. It reads
+   `render.yaml` and configures everything.
+3. Paste the three secrets when prompted: `BOT_TOKEN`, `CHAT_IDS`,
+   `APIFOOTBALL_KEY`. They are marked `sync: false`, so they never touch git.
+4. Deploy. First build takes about two minutes.
+
+Your dashboard is then public at `https://football-tickets-bot.onrender.com`.
+
+### The sleep problem, and how this handles it
+
+Free services spin down after 15 minutes without an **inbound** request, and
+cold starts take ~50 seconds. A polling bot only makes *outbound* calls, so it
+would sleep forever and miss your commands. `bot.py` therefore pings its own
+`/healthz` every 10 minutes whenever `RENDER_EXTERNAL_URL` is present. Render
+sets that variable automatically, so it works with no configuration, and it
+stays a no-op on your laptop.
+
+### Two things to know
+
+**Only one copy may poll at a time.** Telegram allows a single `getUpdates`
+consumer per token. The moment Render is live, stop every other `python bot.py`
+or both will fight and log `409 Conflict`.
+
+**Render's disk is ephemeral.** Anything written there vanishes on restart, so
+`/subscribe` registrations do not survive a redeploy. The ROI ledger is safe —
+GitHub Actions owns it and commits it to the repo. That is also why
+`DAILY_PUSH` is `0` in the blueprint: Actions sends the daily pair, Render only
+answers commands. Leave it that way or you will get the tickets twice.
+
+---
+
+## Step 7 — Use it
 
 The Action handles the daily push. For interactive commands, run the bot
 anywhere (laptop, Pi, any box):

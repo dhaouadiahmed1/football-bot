@@ -18,6 +18,9 @@ import asyncio
 import json
 import importlib
 import logging
+import httpx
+import time
+import os
 import threading
 from datetime import date, datetime, time as dtime
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -343,6 +346,33 @@ class _Health(BaseHTTPRequestHandler):
         pass
 
 
+def start_keepalive() -> None:
+    """Stop a free Render instance from idling out.
+
+    Render spins a free web service down after 15 minutes with no inbound
+    request, and the next caller waits ~50s for a cold start. A Telegram bot
+    polls *outbound*, so it generates no inbound traffic at all and would
+    sleep forever. Pinging our own public URL every 10 minutes keeps it warm.
+
+    Only runs when RENDER_EXTERNAL_URL is set, so it is a no-op locally.
+    """
+    url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("KEEPALIVE_URL")
+    if not url:
+        return
+    target = url.rstrip("/") + "/healthz"
+
+    def loop() -> None:
+        while True:
+            time.sleep(600)  # 10 min, comfortably inside the 15 min window
+            try:
+                httpx.get(target, timeout=20)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("keepalive ping failed: %s", exc)
+
+    threading.Thread(target=loop, daemon=True).start()
+    log.info("Keep-alive pinging %s every 10 min", target)
+
+
 def start_health_server() -> None:
     """Free web hosts (Render/Railway) expect an open port. Harmless elsewhere."""
     try:
@@ -383,6 +413,7 @@ def main() -> None:
         raise SystemExit("BOT_TOKEN missing — copy .env.example to .env and fill it in.")
 
     start_health_server()
+    start_keepalive()
     app = Application.builder().token(config.BOT_TOKEN).post_init(_post_init).build()
 
     app.add_handler(CommandHandler(["start", "help"], cmd_start))

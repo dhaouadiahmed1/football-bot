@@ -51,6 +51,13 @@ Send `/start`, then `/today`.
 
 ---
 
+## 2. Want the commands answering 24/7 too?
+
+The daily 07:00 post needs nothing running — Actions handles it. For `/today`
+and friends to answer at any hour, deploy the included `render.yaml` blueprint
+to Render's free plan (no credit card). `bot.py` self-pings to defeat the
+15-minute idle spin-down. Details in [SETUP.md](SETUP.md), Step 6.
+
 ## 2. Run it daily for free, with no server
 
 No Render, no Railway, no sleeping dyno, no uptime pinger. One command:
