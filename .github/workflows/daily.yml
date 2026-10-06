@@ -6,8 +6,11 @@ name: Daily football tickets
 
 on:
   schedule:
-    - cron: "55 5 * * *"     # 05:55 UTC = 06:55 Tunis; GitHub queues a few
-                             # minutes late, so it lands ~07:00 (UTC+1, no DST)
+    # GitHub's scheduler is best-effort and does drop slots, so there are two.
+    # daily.py refuses to post twice for the same date, so the backup is a
+    # no-op whenever the first one worked.
+    - cron: "55 5 * * *"     # 05:55 UTC = 06:55 Tunis  <- the one that normally fires
+    - cron: "20 6 * * *"     # 06:20 UTC = 07:20 Tunis  <- safety net
   workflow_dispatch:          # lets you run it by hand from the Actions tab
 
 permissions:

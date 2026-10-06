@@ -38,6 +38,41 @@ TZ = ZoneInfo(config.TIMEZONE)
 API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
+def already_sent(day) -> bool:
+    """True if today's card is already in history.
+
+    GitHub's cron is best-effort and sometimes skips a slot, so the workflow
+    runs twice on purpose. This is what stops the backup slot from sending a
+    duplicate when the primary one worked.
+    """
+    if not config.HISTORY_FILE.exists():
+        return False
+    target = day.isoformat()
+    for line in config.HISTORY_FILE.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            if json.loads(line).get("date") == target:
+                return True
+        except json.JSONDecodeError:
+            continue
+    return False
+
+
+def record(day, safe, bomb, note: str = "") -> None:
+    """Append one line to history — the ROI ledger and the duplicate guard."""
+    rec = {"date": day.isoformat(),
+           "generated_at": datetime.now(TZ).isoformat(),
+           "safe": safe.as_dict() if safe else None,
+           "bomb": bomb.as_dict() if bomb else None}
+    if note:
+        rec["note"] = note
+    with config.HISTORY_FILE.open("a") as fh:
+        fh.write(json.dumps(rec) + "\n")
+    log.info("appended to %s", config.HISTORY_FILE)
+
+
 def chat_ids() -> list[str]:
     ids = list(config.DEFAULT_CHAT_IDS)
     if config.SUBS_FILE.exists():
@@ -74,7 +109,14 @@ async def send(text: str, dry: bool) -> None:
 async def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--force", action="store_true",
+                    help="send again even if today's card was already posted")
     args = ap.parse_args()
+
+    today = datetime.now(TZ).date()
+    if already_sent(today) and not (args.force or args.dry_run):
+        log.info("%s already posted — nothing to do (use --force to resend)", today)
+        return 0
 
     if not config.BOT_TOKEN and not args.dry_run:
         log.error("BOT_TOKEN missing")
@@ -90,7 +132,7 @@ async def main() -> int:
 
     # 2 ------------------------------------------------------ analyse today
     provider = get_provider()
-    day = datetime.now(TZ).date()
+    day = today
     try:
         matches = await provider.fixtures(day)
     finally:
@@ -101,6 +143,9 @@ async def main() -> int:
             "😴 <b>No fixtures to analyse right now.</b>\n"
             "<i>International break, or the free fixtures file hasn't been "
             "refreshed yet. I'll check again tomorrow.</i>", args.dry_run)
+        # Still record the day, so the backup cron slot knows it ran.
+        if not args.dry_run:
+            record(day, None, None, note="no fixtures")
         return 0
 
     sels = build_selections(matches)
@@ -112,13 +157,7 @@ async def main() -> int:
 
     # 4 ------------------------------------------------------------ persist
     if not args.dry_run:
-        rec = {"date": day.isoformat(),
-               "generated_at": datetime.now(TZ).isoformat(),
-               "safe": safe.as_dict() if safe else None,
-               "bomb": bomb.as_dict() if bomb else None}
-        with config.HISTORY_FILE.open("a") as fh:
-            fh.write(json.dumps(rec) + "\n")
-        log.info("appended to %s", config.HISTORY_FILE)
+        record(day, safe, bomb)
 
     log.info("done: %d fixtures, safe=%s bomb=%s", len(matches),
              f"{safe.total_odds:.2f}" if safe else "-",
