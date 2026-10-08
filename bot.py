@@ -291,6 +291,31 @@ async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html("\n".join(lines))
 
 
+async def trigger_github(ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Fire the Actions workflow on time.
+
+    GitHub honours workflow_dispatch within seconds but delivers `schedule`
+    6-8 hours late on free repos, so the clock lives here instead. Actions
+    still does the work and still commits the results history, which keeps
+    the ROI ledger on durable storage rather than Render's ephemeral disk.
+    """
+    url = (f"https://api.github.com/repos/{config.GH_REPO}"
+           f"/actions/workflows/{config.GH_WORKFLOW}/dispatches")
+    try:
+        async with httpx.AsyncClient(timeout=30) as c:
+            r = await c.post(url, json={"ref": "main"}, headers={
+                "Authorization": f"Bearer {config.GH_DISPATCH_TOKEN}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            })
+        if r.status_code == 204:
+            log.info("triggered %s on %s", config.GH_WORKFLOW, config.GH_REPO)
+        else:
+            log.error("workflow dispatch failed %s: %s", r.status_code, r.text[:200])
+    except Exception as exc:  # noqa: BLE001
+        log.error("workflow dispatch error: %s", exc)
+
+
 # ----------------------------------------------------------------- daily ----
 async def daily_job(ctx: ContextTypes.DEFAULT_TYPE) -> None:
     day = datetime.now(TZ).date()
@@ -437,9 +462,20 @@ def main() -> None:
         )
         log.info("Bot starting — provider=%s, daily=%02d:%02d %s",
                  PROVIDER.name, config.DAILY_HOUR, config.DAILY_MINUTE, config.TIMEZONE)
+    elif config.GH_DISPATCH_TOKEN:
+        app.job_queue.run_daily(
+            trigger_github,
+            time=dtime(hour=config.DAILY_HOUR, minute=config.DAILY_MINUTE, tzinfo=TZ),
+            name="trigger_github",
+        )
+        log.info("Bot starting — provider=%s, will trigger %s at %02d:%02d %s "
+                 "(GitHub Actions does the sending)", PROVIDER.name,
+                 config.GH_WORKFLOW, config.DAILY_HOUR, config.DAILY_MINUTE,
+                 config.TIMEZONE)
     else:
-        log.info("Bot starting — provider=%s, daily push OFF "
-                 "(GitHub Actions sends it); commands still work", PROVIDER.name)
+        log.info("Bot starting — provider=%s, daily push OFF and no "
+                 "GH_DISPATCH_TOKEN; relying on GitHub's own (late) cron",
+                 PROVIDER.name)
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 

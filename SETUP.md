@@ -279,6 +279,44 @@ answers commands. Leave it that way or you will get the tickets twice.
 
 ---
 
+## Step 6b — Make the 07:00 post actually land at 07:00
+
+GitHub's free `schedule` trigger is not a clock. Measured on this repo:
+
+| run | asked for | actually ran | late by |
+|---|---|---|---|
+| #2 | 06:55 | 13:14 | 6h 19m |
+| #3 | 06:55 | 13:05 | 6h 10m |
+| #5 | 06:55 | 13:16 | 6h 21m |
+
+`workflow_dispatch`, by contrast, starts in **under ten seconds**. So the
+always-on Render instance keeps the clock and pokes the workflow itself.
+Actions still does the analysis, the sending and the history commit — only
+the trigger moves.
+
+1. Create a token at **https://github.com/settings/personal-access-tokens/new**
+   - *Fine-grained*, repository access: **only** `football-bot`
+   - Permissions → Repository → **Actions: Read and write**
+   - That is the single permission it needs. It cannot read your code,
+     push commits, or touch any other repo.
+2. Render dashboard → your service → **Environment** → **Add environment
+   variable**
+   - `GH_DISPATCH_TOKEN` = the token
+   - `GH_REPO` = `dhaouadiahmed1/football-bot`
+3. **Save** — Render redeploys automatically, about two minutes.
+
+The log line to look for afterwards:
+
+```
+Bot starting — will trigger daily.yml at 07:00 Africa/Tunis
+```
+
+GitHub's own late cron stays enabled as a safety net. When it eventually
+fires at 13:00, `daily.py` sees today's date already in `history.jsonl` and
+exits without sending, so you still get exactly one message a day.
+
+---
+
 ## Step 7 — Use it
 
 The Action handles the daily push. For interactive commands, run the bot

@@ -33,6 +33,11 @@ services:
         sync: false
       - key: APIFOOTBALL_KEY
         sync: false
+      # Fine-grained GitHub token with Actions: read+write on this repo.
+      # Lets this always-on instance fire the workflow at exactly 07:00,
+      # because GitHub's own cron runs 6-8 hours late on free repos.
+      - key: GH_DISPATCH_TOKEN
+        sync: false
 
       # ── settings ─────────────────────────────────────────────────────────
       - key: TIMEZONE
@@ -50,6 +55,9 @@ services:
       # Leave this at 0: here the bot answers commands, nothing more.
       - key: DAILY_PUSH
         value: "0"
+
+      - key: GH_REPO
+        value: dhaouadiahmed1/football-bot
 
       - key: PYTHON_VERSION
         value: "3.12"

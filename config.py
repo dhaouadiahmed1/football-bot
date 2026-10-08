@@ -20,6 +20,14 @@ DAILY_MINUTE = int(os.getenv("DAILY_MINUTE", "0"))
 # 0 = this process answers commands but never pushes the daily pair.
 # Set it to 0 whenever GitHub Actions is the one sending, or you get two.
 DAILY_PUSH = os.getenv("DAILY_PUSH", "1") not in ("0", "false", "no")
+
+# GitHub's free cron fires 6-8 hours late, every time. So the always-on
+# instance pokes the workflow itself at exactly DAILY_HOUR:DAILY_MINUTE —
+# workflow_dispatch runs within seconds, unlike schedule. Needs a token with
+# Actions:write on the repo. Unset = feature off.
+GH_DISPATCH_TOKEN = os.getenv("GH_DISPATCH_TOKEN", "").strip()
+GH_REPO = os.getenv("GH_REPO", "dhaouadiahmed1/football-bot").strip()
+GH_WORKFLOW = os.getenv("GH_WORKFLOW", "daily.yml").strip()
 TIMEZONE = os.getenv("TIMEZONE", "Africa/Tunis")
 
 # ---------------------------------------------------------------- Provider --
