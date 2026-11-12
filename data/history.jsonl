@@ -36,3 +36,4 @@
 {"date": "2026-11-09", "generated_at": "2026-11-09T15:25:26.368083+01:00", "safe": null, "bomb": {"kind": "BOMB", "total_odds": 2.05, "combined_prob": 0.4776, "ev": -0.021, "legs": [{"match_id": "SP2|09/11/2026|Sabadell|Sociedad B", "match": "Sabadell vs Sociedad B", "league": "Spain - Segunda", "kickoff": "19:30", "day": "Mon 09 Nov", "market": "O2.5", "market_name": "Over 2.5 goals", "odds": 2.05, "prob": 0.4776, "edge": -0.0102, "xg": "1.90-1.15"}]}, "bomb_result": {"status": "lost", "legs_won": 0, "legs_total": 1, "legs_pending": 0, "profit": -1.0}}
 {"date": "2026-11-10", "generated_at": "2026-11-10T14:48:16.860966+01:00", "safe": null, "bomb": null, "note": "no fixtures"}
 {"date": "2026-11-11", "generated_at": "2026-11-11T13:59:14.459674+01:00", "safe": null, "bomb": null, "note": "no fixtures"}
+{"date": "2026-11-12", "generated_at": "2026-11-12T15:00:25.816624+01:00", "safe": null, "bomb": null, "note": "no fixtures"}
